@@ -37,48 +37,23 @@ pub fn build(b: *std.Build) void {
     });
     
     kernel.root_module.addImport("limine", limine.module("limine"));
-    kernel.setLinkerScriptPath(.{ .path = "src/linker.ld" });
+    kernel.setLinkerScriptPath(.{ .path = "linker.ld" });
 
     b.installArtifact(kernel);
-    //
-    // const kernel_step = b.step("kernel", "Build the kernel");
-    // kernel_step.dependOn(&kernel.step);
-    //
-    // const iso_dir = b.fmt("{s}/iso_root", .{b.cache_root.path.?});
-    // const kernel_path = b.fmt("{s}/{s}", .{b.exe_dir, kernel.out_filename});
-    // const iso_path = b.fmt("{s}/disk.iso", .{b.exe_dir});
-    //
-    // const iso_cmd_str = &[_][]const u8{
-    //     "/bin/sh", "-c",
-    //     std.mem.concat(b.allocator, u8, &[_][] const u8 {
-    //         "mkdir -p ", iso_dir, "/boot/grub", " && ",
-    //         "cp ", kernel_path, " ", iso_dir, "/boot/kernel.elf", " && ",
-    //         "cp src/grub.cfg ", iso_dir, "/boot/grub/grub.cfg", " && ",
-    //         "grub-mkrescue -o ", iso_path, " ", iso_dir
-    //     }) catch @panic("OOM")
-    // };
-    //
-    // const iso_cmd = b.addSystemCommand(iso_cmd_str);
-    // iso_cmd.step.dependOn(kernel_step);
-    //
-    // const iso_step = b.step("iso", "Build an ISO image");
-    // iso_step.dependOn(&iso_cmd.step);
-    //
-    // b.default_step.dependOn(iso_step);
-    //
-    // const run_cmd_str = &[_][] const u8 {
-    //     "qemu-system-x86_64",
-    //     "-cdrom", iso_path,
-    //     "-debugcon", "stdio",
-    //     "-vga", "virtio",
-    //     "-m", "4G",
-    //     "-machine", "q35,accel=kvm:whpx:tcg",
-    //     "-no-reboot", "-no-shutdown"
-    // };
-    //
-    // const run_cmd = b.addSystemCommand(run_cmd_str);
-    // run_cmd.step.dependOn(b.getInstallStep());
-    //
-    // const run_step = b.step("run", "Run the kernel");
-    // run_step.dependOn(&run_cmd.step);
+    const iso_step = b.step("iso", "Build iso");
+    iso_step.dependOn(&kernel.step);
+
+    const iso_cmd = b.addSystemCommand(&[_][]const u8{"./iso.sh"});
+
+    const run = b.addSystemCommand(&[_][]const u8{"./run.sh"});
+    run.step.dependOn(&iso_cmd.step);
+
+    const run_step = b.step("run", "Run kernel on QEMU");
+    run_step.dependOn(&run.step);
+
+    const debug = b.addSystemCommand(&[_][]const u8{"./db.sh"});
+    debug.step.dependOn(&iso_cmd.step);
+
+    const debug_step = b.step("debug", "Debug kernel on QEMU");
+    debug_step.dependOn(&debug.step);
 }
