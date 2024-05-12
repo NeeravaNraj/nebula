@@ -26,14 +26,9 @@ export fn _start() callconv(.C) noreturn {
         // Get the first framebuffer's information.
         const framebuffer = framebuffer_response.framebuffers()[0];
 
-        const fb_ctx = terminal.FbCtx.init(framebuffer);
-        if (fb_ctx) |ctx| {
-            @constCast(&ctx).raw_putc('H');
-            @constCast(&ctx).raw_putc('e');
-            @constCast(&ctx).raw_putc('l');
-            @constCast(&ctx).raw_putc('l');
-            @constCast(&ctx).raw_putc('o');
-            @constCast(&ctx).raw_putc('!');
+        const term = terminal.TerminalCtx.init(framebuffer);
+        if (term) |ctx| {
+            @constCast(&ctx).write("Hello {s}!", .{"world"});
         } else {
             for (0..100) |i| {
                 // Calculate the pixel offset using the framebuffer information we obtained above.
