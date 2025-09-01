@@ -2,11 +2,14 @@
 #![no_main]
 
 mod serial;
+mod logger;
 use core::{arch::asm, panic::PanicInfo};
 use limine::{
     BaseRevision,
     request::{FramebufferRequest, RequestsEndMarker, RequestsStartMarker},
 };
+
+use crate::{logger::Logger, serial::{Serial, COM1}};
 
 #[used]
 #[unsafe(link_section = ".requests")]
@@ -27,11 +30,11 @@ static _END_MARKER: RequestsEndMarker = RequestsEndMarker::new();
 #[unsafe(no_mangle)]
 pub extern "C" fn kmain() -> ! {
     assert!(BASE_REVISION.is_supported());
-    
-    if let Some(serial) = serial::Serial::init() {
-        serial.write_string("HELLO FROM SERIAL!!!!!");
-    }
 
+    let mut serial = Serial::new(COM1);
+    serial.init().unwrap();
+    serial_log_info!(serial, "Initialized serial port at - {:#02x}", COM1);
+    
     loop {}
 }
 
