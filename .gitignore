@@ -1,4 +1,6 @@
-/target
-/limine
-/ovmf
+ovmf
+target
+limine
+iso_root
+
 *.iso
