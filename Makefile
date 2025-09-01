@@ -81,7 +81,6 @@ $(IMAGE_NAME).iso: limine/limine kernel
 	./limine/limine bios-install $(IMAGE_NAME).iso
 
 	rm $(KERNEL_BASE_DIR)/kernel
-	rm -rf iso_root
 # endif
 
 .PHONY: clean
