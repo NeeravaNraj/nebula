@@ -22,15 +22,27 @@ ifeq ($(RUST_PROFILE),dev)
     override RUST_PROFILE_SUBDIR := debug
 endif
 
+override OS_NAME := nebula_os
+override IMAGE_NAME := $(OS_NAME)-$(KARCH)
 override KERNEL_BASE_DIR := ./target/$(RUST_TARGET)/$(RUST_PROFILE_SUBDIR)
-
-override IMAGE_NAME := nebula_os-$(KARCH)
 
 .PHONY: all
 all: $(IMAGE_NAME).iso
 
 .PHONY: run
 run: run-$(KARCH)
+
+.PHONY: debug
+debug: ovmf/ovmf-code-$(KARCH).fd ovmf/ovmf-vars-$(KARCH).fd $(IMAGE_NAME).iso
+	qemu-system-$(KARCH) \
+		-M q35 \
+		-serial stdio \
+		-drive if=pflash,unit=0,format=raw,file=ovmf/ovmf-code-$(KARCH).fd,readonly=on \
+		-drive if=pflash,unit=1,format=raw,file=ovmf/ovmf-vars-$(KARCH).fd \
+		-cdrom $(IMAGE_NAME).iso \
+		-s -S \
+		$(QEMUFLAGS) &
+	rust-gdb -iex "set debug init 1" $(KERNEL_BASE_DIR)/$(OS_NAME)
 
 .PHONY: run-x86_64
 run-x86_64: ovmf/ovmf-code-$(KARCH).fd ovmf/ovmf-vars-$(KARCH).fd $(IMAGE_NAME).iso
