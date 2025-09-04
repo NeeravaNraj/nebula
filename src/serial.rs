@@ -1,6 +1,5 @@
-use core::{arch::asm, fmt::{self, Arguments, Write}};
-
-use crate::logger::{LogLevels, Logger};
+use crate::logger::{Logger};
+use core::{arch::asm, fmt::{self, Arguments}};
 
 
 pub static COM1: u16 = 0x3F8;
