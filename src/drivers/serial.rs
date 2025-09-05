@@ -1,8 +1,12 @@
-use crate::logger::{Logger};
+use spin::Mutex;
+use lazy_static::lazy_static;
+use crate::logger::{LogLevels, Logger};
 use core::{arch::asm, fmt::{self, Arguments}};
 
 
-pub static COM1: u16 = 0x3F8;
+lazy_static! {
+    pub static ref COM1: Mutex<Serial> = Mutex::new(Serial::new(0x3F8).init().unwrap());
+}
 
 pub struct Serial {
     port: u16,
@@ -14,7 +18,7 @@ impl Serial {
         Self { port }
     }
 
-    pub fn init(&self) -> Result<(), ()> {
+    pub fn init(self) -> Result<Self, ()> {
         outb(self.port + 1, 0x00); // Disable all interrupts
         outb(self.port + 3, 0x80); // Enable DLAB (set baud rate divisor)
         outb(self.port + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
@@ -30,7 +34,7 @@ impl Serial {
 
         outb(self.port + 4, 0x0F);
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn write_string(&self, s: &str) {
@@ -95,40 +99,40 @@ impl fmt::Write for Serial {
 
 #[macro_export]
 macro_rules! serial_log_info {
-    ($serial:ident, $($fmt:tt)*) => ({
-        use $crate::logger::Logger;
-        $serial.log($crate::logger::LogLevels::Info, format_args!($($fmt)*));
+    ($($fmt:tt)*) => ({
+        $crate::drivers::serial::_log($crate::logger::LogLevels::Info, format_args!($($fmt)*));
     });
 }
 
 #[macro_export]
 macro_rules! serial_log_warn {
-    ($serial:ident, $($fmt:tt)*) => ({
-        use $crate::logger::Logger;
-        $serial.log($crate::logger::LogLevels::Warn, format_args!($($fmt)*));
+    ($($fmt:tt)*) => ({
+        $crate::drivers::serial::_log($crate::logger::LogLevels::Warn, format_args!($($fmt)*));
     });
 }
 
 #[macro_export]
 macro_rules! serial_log_error {
-    ($serial:ident, $($fmt:tt)*) => ({
-        use $crate::logger::Logger;
-        $serial.log($crate::logger::LogLevels::Error, format_args!($($fmt)*));
+    ($($fmt:tt)*) => ({
+        $crate::drivers::serial::_log($crate::logger::LogLevels::Error, format_args!($($fmt)*));
     });
 }
 
 #[macro_export]
 macro_rules! serial_log_fatal {
-    ($serial:ident, $($fmt:tt)*) => ({
-        use $crate::logger::Logger;
-        $serial.log($crate::logger::LogLevels::Fatal, format_args!($($fmt)*));
+    ($($fmt:tt)*) => ({
+        $crate::drivers::serial::_log($crate::logger::LogLevels::Fatal, format_args!($($fmt)*));
     });
 }
 
 #[macro_export]
 macro_rules! serial_log_debug {
-    ($serial:ident, $($fmt:tt)*) => ({
-        use $crate::logger::Logger;
-        $serial.log($crate::logger::LogLevels::Debug, format_args!($($fmt)*));
+    ($($fmt:tt)*) => ({
+        $crate::drivers::serial::_log($crate::logger::LogLevels::Debug, format_args!($($fmt)*));
     });
+}
+
+#[doc(hidden)]
+pub fn _log(level: LogLevels, args: Arguments<'_>) {
+    COM1.lock().log(level, args);
 }

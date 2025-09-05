@@ -1,14 +1,13 @@
-use core::arch::asm;
+use core::{arch::asm, u16};
+use crate::{arch::x86_64::reload_segments};
 
-use crate::{serial::Serial, serial_log_info};
 
-
-static mut GDT: [u8; 48] = [0; 48];
+static mut GDT: [u8; 40] = [0; 40];
 
 #[repr(C, packed)]
 struct Gdtr {
+    limit: u16,
     base: u64,
-    limit: u16
 }
 
 #[allow(unused)]
@@ -27,10 +26,10 @@ pub enum Segements {
 #[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum PrivilegeLevel {
-    Ring0,
-    Ring1,
-    Ring2,
-    Ring3,
+    Ring0 = 0,
+    Ring1 = 1,
+    Ring2 = 2,
+    Ring3 = 3,
 }
 
 pub struct GDTEntry {
@@ -67,12 +66,12 @@ impl GDTEntry {
             *target.offset(5) = self.access;
 
             // Encode flags
-            *target.offset(6) |= (self.flags & 0xF) << 4;
+            *target.offset(6) |= (self.flags & 0x0F) << 4;
         }
     }
 }
 
-pub fn init(serial: &mut Serial) {
+pub fn init() {
     let null = GDTEntry::null();
     let kernel_code = GDTEntry::new(0xFFFFF, 0, 0x9A, 0xA);
     let kernel_data = GDTEntry::new(0xFFFFF, 0, 0x92, 0xC);
@@ -91,7 +90,6 @@ pub fn init(serial: &mut Serial) {
 
         user_code.encode(gdt.offset(24));
         user_data.encode(gdt.offset(32));
-        serial_log_info!(serial, "Load entries");
 
         // Load GDT
         #[allow(static_mut_refs)]
@@ -100,10 +98,11 @@ pub fn init(serial: &mut Serial) {
             limit: (GDT.len() - 1) as u16
         };
         load_gdt(&gdtr);
-        serial_log_info!(serial, "Load GDTR");
 
-        reload_segments(Segements::KernelCode, Segements::KernelData, PrivilegeLevel::Ring0);
-        serial_log_info!(serial, "Reload segments");
+        let code_selector = encode_selector(Segements::KernelCode, PrivilegeLevel::Ring0) as u16;
+        let data_selector = encode_selector(Segements::KernelData, PrivilegeLevel::Ring0) as u16;
+
+        reload_segments(code_selector, data_selector);
     }
 }
 
@@ -118,34 +117,7 @@ fn load_gdt(gdtr: &Gdtr) {
     }
 }
 
-fn reload_segments(code: Segements, data: Segements, privilege: PrivilegeLevel) {
-    unsafe {
-        let code_selector = encode_select(code, privilege);
-        let data_selector = encode_select(data, privilege);
-        asm!(
-            "push {code_selector}",
-            "lea rax, [rip + 2f]",
-            "push rax",
-            "retfq",
-            "2:",
-            code_selector = in(reg) code_selector as u64,
-            out("rax") _,
-            options(preserves_flags)
-        );
-
-        asm!(
-            "mov ds, dx",
-            "mov ss, dx",
-            "mov es, dx",
-            "mov fs, dx",
-            "mov gs, dx",
-            in("dx") data_selector as u16,
-            out("rax") _,
-            options(preserves_flags)
-        );
-    }
-}
-
-fn encode_select(segment: Segements, privilege: PrivilegeLevel) -> usize {
+#[inline]
+fn encode_selector(segment: Segements, privilege: PrivilegeLevel) -> usize {
     ((segment as usize) << 3 | privilege as usize) | 0
 }
