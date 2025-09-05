@@ -1,6 +1,5 @@
-use crate::serial_log_info;
-
 mod gdt;
+use crate::serial_log_debug;
 
 unsafe extern "C" {
     pub fn reload_segments(code: u16, data: u16);
@@ -8,5 +7,5 @@ unsafe extern "C" {
 
 pub fn init() {
     gdt::init();
-    serial_log_info!("Initialized GDT");
+    serial_log_debug!("Initialized GDT");
 }
