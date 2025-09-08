@@ -1,11 +1,12 @@
 mod gdt;
-use crate::serial_log_debug;
+mod idt;
+mod isr;
 
-unsafe extern "C" {
-    pub fn reload_segments(code: u16, data: u16);
-}
+use crate::serial_log_debug;
 
 pub fn init() {
     gdt::init();
     serial_log_debug!("Initialized GDT");
+    idt::init();
+    serial_log_debug!("Initialized IDT");
 }

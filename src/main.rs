@@ -12,6 +12,11 @@ pub extern "C" fn kmain() -> ! {
     boot::verify();
     arch::x86_64::init();
 
+    #[allow(unconditional_panic)]
+    let a = 20 / 0;
+
+    let x = 20;
+
     loop {}
 }
 

@@ -1,6 +1,7 @@
-use core::{arch::asm, u16};
-use crate::{arch::x86_64::reload_segments};
-
+unsafe extern "C" {
+    pub fn reload_segments(code: u16, data: u16);
+    fn load_gdt(gdtr: *const Gdtr, code: u16, data: u16);
+}
 
 static mut GDT: [u8; 40] = [0; 40];
 
@@ -8,6 +9,17 @@ static mut GDT: [u8; 40] = [0; 40];
 struct Gdtr {
     limit: u16,
     base: u64,
+}
+
+#[allow(unused)]
+#[repr(u8)]
+pub enum GdtSelectors {
+    KernelCode = 0x8,
+    KernelData = 0x10,
+
+    UserCode   = 0x1B,
+    UserData   = 0x23,
+
 }
 
 #[allow(unused)]
@@ -94,30 +106,19 @@ pub fn init() {
         // Load GDT
         #[allow(static_mut_refs)]
         let gdtr = Gdtr { 
+            limit: (GDT.len() - 1) as u16,
             base: gdt as u64,
-            limit: (GDT.len() - 1) as u16
         };
-        load_gdt(&gdtr);
 
-        let code_selector = encode_selector(Segements::KernelCode, PrivilegeLevel::Ring0) as u16;
-        let data_selector = encode_selector(Segements::KernelData, PrivilegeLevel::Ring0) as u16;
+        let code_selector = GdtSelectors::KernelCode as u16;
+        let data_selector = GdtSelectors::KernelData as u16;
 
-        reload_segments(code_selector, data_selector);
+        load_gdt(&gdtr, code_selector, data_selector);
     }
 }
 
-fn load_gdt(gdtr: &Gdtr) {
-    unsafe {
-        asm!(
-            "CLI",
-            "LGDT [{}]",
-            in (reg) gdtr,
-            options(readonly, nostack, preserves_flags)
-        )
-    }
-}
-
+#[allow(unused)]
 #[inline]
-fn encode_selector(segment: Segements, privilege: PrivilegeLevel) -> usize {
-    ((segment as usize) << 3 | privilege as usize) | 0
+pub fn encode_selector(segment: Segements, privilege: PrivilegeLevel) -> usize {
+    0 | ((segment as usize) << 3 | privilege as usize)
 }
