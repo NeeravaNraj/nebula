@@ -1,5 +1,5 @@
 use core::{u128, u64, mem};
-use crate::arch::x86_64::{gdt::GdtSelectors, isr};
+use crate::{arch::x86_64::{gdt::GdtSelectors, isr}, e9_print};
 
 unsafe extern "C" {
     fn load_idt(idtr: *const Idtr);
@@ -7,6 +7,7 @@ unsafe extern "C" {
 
 static mut IDT: [u128; 256] = [0; 256];
 
+#[allow(unused)]
 #[repr(u8)]
 enum GateTypeAttributes {
     Interrupt = 0x8E,
@@ -74,6 +75,7 @@ pub fn init() {
         load_entries();
         load_idt(&idtr);
     }
+    e9_print!("Initialized IDT");
 }
 
 pub fn load_entries() {

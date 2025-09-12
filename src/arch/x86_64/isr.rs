@@ -1,5 +1,4 @@
 use core::usize;
-use crate::serial_log_error;
 
 static EXCEPTION_MESSAGES: [&'static str; 22] = [
     "Division error",
@@ -46,7 +45,7 @@ extern "C" fn isr_handler(frame: &InterruptFrame) {
         message = EXCEPTION_MESSAGES[interrupt];
     }
 
-    serial_log_error!("CPU Exception encountered[{}]: {} - with code '{}'", interrupt, message, frame.error_code);
+    panic!("CPU Exception encountered[{}]: {} - with error code '{}'", interrupt, message, frame.error_code);
 }
 
 #[allow(unused)]

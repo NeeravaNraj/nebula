@@ -1,3 +1,5 @@
+use crate::e9_print;
+
 unsafe extern "C" {
     pub fn reload_segments(code: u16, data: u16);
     fn load_gdt(gdtr: *const Gdtr, code: u16, data: u16);
@@ -115,6 +117,7 @@ pub fn init() {
 
         load_gdt(&gdtr, code_selector, data_selector);
     }
+    e9_print!("Initialized GDT");
 }
 
 #[allow(unused)]
