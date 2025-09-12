@@ -1,12 +1,22 @@
+pub mod e9;
+
 mod gdt;
 mod idt;
 mod isr;
 
-use crate::serial_log_debug;
+use core::arch::asm;
+use crate::hal::HalArgs;
 
-pub fn init() {
+pub fn init(_args: &HalArgs) {
     gdt::init();
-    serial_log_debug!("Initialized GDT");
     idt::init();
-    serial_log_debug!("Initialized IDT");
+}
+
+pub fn halt() -> ! {
+    loop {
+        unsafe {
+            asm!("cli");
+            asm!("hlt");
+        }
+    }
 }
