@@ -5,6 +5,7 @@ fn build_asm() {
         "src/arch/x86_64/asm/gdt.asm",
         "src/arch/x86_64/asm/idt.asm",
         "src/arch/x86_64/asm/isrs.asm",
+        "src/arch/x86_64/asm/cpuid.asm",
         "src/arch/x86_64/asm/entry.asm",
     ];
 

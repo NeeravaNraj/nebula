@@ -1,4 +1,5 @@
 pub mod e9;
+pub mod cpuid;
 
 mod gdt;
 mod idt;
