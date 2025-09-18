@@ -1,10 +1,10 @@
 [bits 64]
 
-global check_cpuid
-global query_cpuid
+global _check_cpuid
+global _query_cpuid
 
 ; Returns whether cpuid is available
-check_cpuid:
+_check_cpuid:
     pushfq                          ; Save EFLAGS
     pushfq                          ; Store EFLAGS
     xor QWORD [rsp], 0x00200000     ; Invert the ID bit in stored EFLAGS
@@ -16,7 +16,7 @@ check_cpuid:
     and rax, 0x00200000             ; Check if changed
     ret
 
-query_cpuid:
+_query_cpuid:
     push rbp
     mov rbp, rsp
 

@@ -1,6 +1,14 @@
 unsafe extern "C" {
-    pub fn check_cpuid() -> u32;
-    pub fn query_cpuid(eax: u32, ecx: u32) -> CpuIdResult;
+    fn _check_cpuid() -> u32;
+    fn _query_cpuid(eax: u32, ecx: u32) -> CpuIdResult;
+}
+
+pub fn check_cpuid() -> bool {
+    unsafe { _check_cpuid() != 0 }
+}
+
+pub fn query_cpuid(eax: u32, ecx: u32) -> CpuIdResult {
+    unsafe { _query_cpuid(eax, ecx) }
 }
 
 #[repr(C, packed)] 
